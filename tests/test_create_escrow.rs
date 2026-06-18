@@ -1,5 +1,5 @@
+use orbitstream_contracts::{escrow::EscrowStatus, OrbitStream, OrbitStreamClient};
 use soroban_sdk::{testutils::Address as _, Address, Env};
-use orbitstream_contracts::{OrbitStream, OrbitStreamClient, escrow::EscrowStatus};
 
 fn setup() -> (Env, OrbitStreamClient<'static>, Address, Address, Address) {
     let env = Env::default();

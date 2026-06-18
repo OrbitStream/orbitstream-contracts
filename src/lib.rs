@@ -1,15 +1,15 @@
 #![no_std]
 
-pub mod escrow;
 pub mod errors;
+pub mod escrow;
 pub mod events;
 pub mod storage;
 
-use soroban_sdk::{contract, contractimpl, Address, Env};
 use errors::ContractError;
 use escrow::{Escrow, EscrowStatus};
-use storage::{store_escrow, get_escrow, get_next_escrow_id, increment_escrow_id};
 use events::*;
+use soroban_sdk::{contract, contractimpl, Address, Env};
+use storage::{get_escrow, get_next_escrow_id, increment_escrow_id, store_escrow};
 
 #[contract]
 pub struct OrbitStream;
@@ -51,22 +51,24 @@ impl OrbitStream {
 
         store_escrow(&env, &escrow);
 
-        emit_escrow_created(&env, EscrowCreatedEvent {
-            escrow_id,
-            buyer,
-            seller,
-            token,
-            amount,
-            timeout_at: escrow.timeout_at,
-        });
+        emit_escrow_created(
+            &env,
+            EscrowCreatedEvent {
+                escrow_id,
+                buyer,
+                seller,
+                token,
+                amount,
+                timeout_at: escrow.timeout_at,
+            },
+        );
 
         Ok(escrow_id)
     }
 
     /// Release escrowed funds to seller. Requires seller auth.
     pub fn release(env: Env, escrow_id: u64) -> Result<(), ContractError> {
-        let mut escrow = get_escrow(&env, escrow_id)
-            .ok_or(ContractError::EscrowNotFound)?;
+        let mut escrow = get_escrow(&env, escrow_id).ok_or(ContractError::EscrowNotFound)?;
 
         if escrow.status != EscrowStatus::Active {
             return Err(ContractError::EscrowAlreadySettled);
@@ -77,19 +79,21 @@ impl OrbitStream {
         escrow.status = EscrowStatus::Released;
         store_escrow(&env, &escrow);
 
-        emit_escrow_released(&env, EscrowReleasedEvent {
-            escrow_id,
-            seller: escrow.seller.clone(),
-            amount: escrow.amount,
-        });
+        emit_escrow_released(
+            &env,
+            EscrowReleasedEvent {
+                escrow_id,
+                seller: escrow.seller.clone(),
+                amount: escrow.amount,
+            },
+        );
 
         Ok(())
     }
 
     /// Refund escrowed funds to buyer. Only valid after timeout.
     pub fn refund(env: Env, escrow_id: u64) -> Result<(), ContractError> {
-        let mut escrow = get_escrow(&env, escrow_id)
-            .ok_or(ContractError::EscrowNotFound)?;
+        let mut escrow = get_escrow(&env, escrow_id).ok_or(ContractError::EscrowNotFound)?;
 
         if escrow.status != EscrowStatus::Active {
             return Err(ContractError::EscrowAlreadySettled);
@@ -105,18 +109,20 @@ impl OrbitStream {
         escrow.status = EscrowStatus::Refunded;
         store_escrow(&env, &escrow);
 
-        emit_escrow_refunded(&env, EscrowRefundedEvent {
-            escrow_id,
-            buyer: escrow.buyer.clone(),
-            amount: escrow.amount,
-        });
+        emit_escrow_refunded(
+            &env,
+            EscrowRefundedEvent {
+                escrow_id,
+                buyer: escrow.buyer.clone(),
+                amount: escrow.amount,
+            },
+        );
 
         Ok(())
     }
 
     /// Read-only: get escrow details.
     pub fn get_escrow(env: Env, escrow_id: u64) -> Result<Escrow, ContractError> {
-        get_escrow(&env, escrow_id)
-            .ok_or(ContractError::EscrowNotFound)
+        get_escrow(&env, escrow_id).ok_or(ContractError::EscrowNotFound)
     }
 }
