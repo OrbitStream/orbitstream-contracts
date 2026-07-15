@@ -9,4 +9,5 @@ pub enum ContractError {
     TimeoutNotReached = 4,
     InvalidAmount = 5,
     InvalidTimeout = 6,
+    InvalidAddresses = 7,
 }
