@@ -33,11 +33,17 @@ impl OrbitStream {
         if timeout_seconds == 0 {
             return Err(ContractError::InvalidTimeout);
         }
+        if buyer == seller {
+            return Err(ContractError::InvalidAddresses);
+        }
 
         let escrow_id = get_next_escrow_id(&env);
         increment_escrow_id(&env);
 
         let now = env.ledger().timestamp();
+        let timeout_at = now
+            .checked_add(timeout_seconds)
+            .ok_or(ContractError::InvalidTimeout)?;
         let escrow = Escrow {
             id: escrow_id,
             buyer: buyer.clone(),
@@ -46,7 +52,7 @@ impl OrbitStream {
             amount,
             status: EscrowStatus::Active,
             created_at: now,
-            timeout_at: now + timeout_seconds,
+            timeout_at,
         };
 
         store_escrow(&env, &escrow);
