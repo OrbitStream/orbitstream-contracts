@@ -1,5 +1,5 @@
 use orbitstream_contracts::{escrow::EscrowStatus, OrbitStream, OrbitStreamClient};
-use soroban_sdk::{testutils::Address as _, Address, Env};
+use soroban_sdk::{testutils::Address as _, testutils::Ledger, Address, Env};
 
 fn setup_with_escrow() -> (Env, OrbitStreamClient<'static>, Address, Address, u64) {
     let env = Env::default();
@@ -40,4 +40,21 @@ fn test_release_already_released() {
 fn test_release_nonexistent() {
     let (_env, client, _buyer, _seller, _escrow_id) = setup_with_escrow();
     client.release(&999);
+}
+
+#[test]
+#[should_panic(expected = "Error(Contract, #3)")]
+fn test_release_after_refund() {
+    let (env, client, _buyer, _seller, escrow_id) = setup_with_escrow();
+
+    // Advance time past timeout
+    env.ledger().with_mut(|l| {
+        l.timestamp = l.timestamp + 3601;
+    });
+
+    // Refund first
+    client.refund(&escrow_id);
+
+    // Try to release refunded escrow
+    client.release(&escrow_id);
 }

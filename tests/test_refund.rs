@@ -56,3 +56,33 @@ fn test_refund_already_released() {
     // Try refund on released escrow
     client.refund(&escrow_id);
 }
+
+#[test]
+#[should_panic(expected = "Error(Contract, #1)")]
+fn test_refund_nonexistent() {
+    let (env, client, _buyer, _seller, _escrow_id) = setup_with_escrow();
+
+    // Advance time past timeout
+    env.ledger().with_mut(|l| {
+        l.timestamp = l.timestamp + 3601;
+    });
+
+    client.refund(&999);
+}
+
+#[test]
+#[should_panic(expected = "Error(Contract, #3)")]
+fn test_refund_after_refund() {
+    let (env, client, _buyer, _seller, escrow_id) = setup_with_escrow();
+
+    // Advance time past timeout
+    env.ledger().with_mut(|l| {
+        l.timestamp = l.timestamp + 3601;
+    });
+
+    // Refund first
+    client.refund(&escrow_id);
+
+    // Try refund again
+    client.refund(&escrow_id);
+}
