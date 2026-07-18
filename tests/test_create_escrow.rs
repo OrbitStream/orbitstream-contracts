@@ -53,3 +53,10 @@ fn test_create_escrow_zero_timeout() {
     let (_env, client, buyer, seller, token) = setup();
     client.create_escrow(&buyer, &seller, &token, &1000, &0);
 }
+
+#[test]
+#[should_panic(expected = "Error(Contract, #7)")]
+fn test_create_escrow_same_buyer_seller() {
+    let (_env, client, buyer, _seller, token) = setup();
+    client.create_escrow(&buyer, &buyer, &token, &1000, &3600);
+}
