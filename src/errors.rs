@@ -10,4 +10,5 @@ pub enum ContractError {
     InvalidAmount = 5,
     InvalidTimeout = 6,
     InvalidAddresses = 7,
+    TransferFailed = 8,
 }

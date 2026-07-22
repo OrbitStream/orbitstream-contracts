@@ -8,7 +8,7 @@ pub mod storage;
 use errors::ContractError;
 use escrow::{Escrow, EscrowStatus};
 use events::*;
-use soroban_sdk::{contract, contractimpl, Address, Env};
+use soroban_sdk::{contract, contractimpl, token, Address, Env};
 use storage::{get_escrow, get_next_escrow_id, increment_escrow_id, store_escrow};
 
 #[contract]
@@ -55,6 +55,13 @@ impl OrbitStream {
             timeout_at,
         };
 
+        let token_client = token::Client::new(&env, &token);
+        let amount_i128 = amount as i128;
+        if token_client.balance(&buyer) < amount_i128 {
+            return Err(ContractError::TransferFailed);
+        }
+        token_client.transfer(&buyer, &env.current_contract_address(), &amount_i128);
+
         store_escrow(&env, &escrow);
 
         emit_escrow_created(
@@ -83,6 +90,18 @@ impl OrbitStream {
         escrow.seller.require_auth();
 
         escrow.status = EscrowStatus::Released;
+
+        let token_client = token::Client::new(&env, &escrow.token);
+        let amount_i128 = escrow.amount as i128;
+        if token_client.balance(&env.current_contract_address()) < amount_i128 {
+            return Err(ContractError::TransferFailed);
+        }
+        token_client.transfer(
+            &env.current_contract_address(),
+            &escrow.seller,
+            &amount_i128,
+        );
+
         store_escrow(&env, &escrow);
 
         emit_escrow_released(
@@ -113,6 +132,14 @@ impl OrbitStream {
         escrow.buyer.require_auth();
 
         escrow.status = EscrowStatus::Refunded;
+
+        let token_client = token::Client::new(&env, &escrow.token);
+        let amount_i128 = escrow.amount as i128;
+        if token_client.balance(&env.current_contract_address()) < amount_i128 {
+            return Err(ContractError::TransferFailed);
+        }
+        token_client.transfer(&env.current_contract_address(), &escrow.buyer, &amount_i128);
+
         store_escrow(&env, &escrow);
 
         emit_escrow_refunded(
